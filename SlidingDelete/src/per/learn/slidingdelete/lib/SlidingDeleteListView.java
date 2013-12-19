@@ -5,11 +5,13 @@ import per.learn.slidingdelete.util.LogUtil;
 import android.content.Context;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
+import android.view.VelocityTracker;
 import android.view.View;
-import android.view.View.OnTouchListener;
+import android.view.ViewConfiguration;
 import android.view.animation.Animation;
 import android.view.animation.Animation.AnimationListener;
 import android.view.animation.AnimationUtils;
+import android.widget.BaseAdapter;
 import android.widget.ListView;
 
 public class SlidingDeleteListView extends ListView implements View.OnTouchListener {
@@ -24,12 +26,16 @@ public class SlidingDeleteListView extends ListView implements View.OnTouchListe
     private View mDeleteBtn;
 
     private Animation mShowAnim, mHideAnim;
-    private boolean mIsAnimPlaying = false;
 
     private int mLastDeleteBtnShowingPos = -1;
+    private int[] mShowingDeleteBtnLocation = new int[2];
 
     private OnDeleteItemListener mDeleteItemListener;
     private View.OnTouchListener mOnTouchListener;
+    private boolean mCancelMotionEvent = false;
+
+    private VelocityTracker mTracker;
+    private static final int MAX_FLING_VELOCITY = ViewConfiguration.getMinimumFlingVelocity() * 10;
 
     public SlidingDeleteListView(Context context) {
         super(context);
@@ -48,13 +54,14 @@ public class SlidingDeleteListView extends ListView implements View.OnTouchListe
     }
 
     private void init() {
+        setChoiceMode(ListView.CHOICE_MODE_SINGLE);
+
         super.setOnTouchListener(this);
         mShowAnim = AnimationUtils.loadAnimation(getContext(), R.anim.anim_show_delete_buttun);
         mShowAnim.setAnimationListener(new AnimationListener() {
 
             @Override
             public void onAnimationStart(Animation animation) {
-                mIsAnimPlaying = true;
             }
 
             @Override
@@ -103,14 +110,25 @@ public class SlidingDeleteListView extends ListView implements View.OnTouchListe
 
     @Override
     public boolean onTouch(final View v, MotionEvent event){
+        if(mCancelMotionEvent && event.getAction() == MotionEvent.ACTION_MOVE) {
+            return true;
+        } else if(mCancelMotionEvent && event.getAction() == MotionEvent.ACTION_DOWN) {
+            event.setAction(MotionEvent.ACTION_CANCEL);
+        }
+
         switch(event.getAction()) {
             case MotionEvent.ACTION_DOWN: {
+                if(mTracker == null)
+                    mTracker = VelocityTracker.obtain();
+                else
+                    mTracker.clear();
 
-                //LogUtil.Log("onTouch(), action down");
-                mLastMotionX = event.getX();
-                mLastMotionY = event.getY();
+                LogUtil.Log("onTouch(), action down");
 
-                ListView lv = (ListView)v;
+                /*ListView lv = (ListView)v;
+                int curPos = lv.pointToPosition((int)mLastMotionX, (int)mLastMotionY);
+                android.util.Log.i("Young Lee", "SlidingDeleteListView.onTouch(), curPos = " + curPos
+                        + ", mLastDeleteBtnShowingPos = " + mLastDeleteBtnShowingPos);
                 if(mLastDeleteBtnShowingPos != -1) {
                     int firstVisiblePos = lv.getFirstVisiblePosition()
                             - lv.getHeaderViewsCount();
@@ -126,15 +144,19 @@ public class SlidingDeleteListView extends ListView implements View.OnTouchListe
                     }
 
                     mLastDeleteBtnShowingPos = -1;
-                }
+                }*/
+
+                mLastMotionX = event.getX();
+                mLastMotionY = event.getY();
             }break;
 
             case MotionEvent.ACTION_MOVE: {
-                if(mIsAnimPlaying) {
-                    return true;
-                }
-
                 //LogUtil.Log("onTouch(), action move");
+
+                mTracker.addMovement(event);
+                mTracker.computeCurrentVelocity(1000);
+                int curVelocityX = (int) mTracker.getXVelocity();
+
                 ListView lv = (ListView)v;
                 float curX = event.getX();
                 float curY = event.getY();
@@ -142,7 +164,9 @@ public class SlidingDeleteListView extends ListView implements View.OnTouchListe
                         (int)mLastMotionX, (int)mLastMotionY);
                 int curPos = lv.pointToPosition((int)curX, (int)curY);
                 int distanceX = (int)(mLastMotionX - curX);
-                if(lastPos == curPos && distanceX >= MAX_DISTANCE) {
+                if(lastPos == curPos && (distanceX >= MAX_DISTANCE || curVelocityX < -MAX_FLING_VELOCITY)) {
+                    LogUtil.Log("onTouch(), action move, curVelocityX = " + curVelocityX
+                            + ", max fling velocity = " + MAX_FLING_VELOCITY);
                     int firstVisiblePos = lv.getFirstVisiblePosition() - lv.getHeaderViewsCount();
                     int factPos = curPos - firstVisiblePos;
                     mItemView = lv.getChildAt(factPos);
@@ -163,16 +187,82 @@ public class SlidingDeleteListView extends ListView implements View.OnTouchListe
                                 if(mDeleteItemListener != null)
                                     mDeleteItemListener.onDeleteBtnClick(v, mLastDeleteBtnShowingPos);
                                 mDeleteBtn.setVisibility(View.GONE);
+
+                                mLastDeleteBtnShowingPos = -1;
                             }
                         });
+
+                        mCancelMotionEvent = true;
                     }
+                }
+
+                lv = null;
+            }break;
+
+            case MotionEvent.ACTION_UP: {
+                LogUtil.Log("onTouch(), action up");
+                if(mTracker != null) {
+                    mTracker.clear();
+                    mTracker.recycle();
+                    mTracker = null;
+                }
+
+                mCancelMotionEvent = false;
+
+                if(mLastDeleteBtnShowingPos != -1) {
+                    ListView lv = (ListView)v;
+                    int firstVisibleItemPos = lv.getFirstVisiblePosition()
+                            - lv.getHeaderViewsCount();
+                    int factPos = mLastDeleteBtnShowingPos - firstVisibleItemPos;
+                    mItemView = lv.getChildAt(factPos);
+                    if(mItemView != null) {
+                        /*MotionEvent downEvent = MotionEvent.obtainNoHistory(event);
+                        downEvent.setAction(MotionEvent.ACTION_DOWN);
+                        boolean resultDown = mItemView.dispatchTouchEvent(downEvent);
+                        MotionEvent cancelEvent = MotionEvent.obtainNoHistory(downEvent);
+                        cancelEvent.setAction(MotionEvent.ACTION_CANCEL);
+                        boolean resultCancel = mItemView.dispatchTouchEvent(cancelEvent);
+                        LogUtil.Log("onTouch(), action up, dispatch action up, resultDown = " + resultDown
+                                + ", resutlCancel = " + resultCancel);*/
+                        LogUtil.Log("mItemView.isPressed() ? " + mItemView.isPressed()
+                                + ", mItemView.isSelected() ? " + mItemView.isSelected()
+                                + ", mItemView.isFocused() ? " + mItemView.isFocused());
+                        /*mItemView.setPressed(false);
+                        mItemView.setSelected(false);
+                        mItemView.clearFocus();
+                        lv.clearChoices();
+                        lv.clearChildFocus(mItemView);
+                        lv.setItemChecked(factPos, false);
+                        lv.setItemChecked(-1, true);
+                        lv.invalidate();*/
+                    }
+
+                    lv = null;
+
+                    return true;
                 }
             }break;
 
-            case MotionEvent.ACTION_UP:
             case MotionEvent.ACTION_CANCEL: {
-                //LogUtil.Log("onTouch(), action up");
-                mIsAnimPlaying = false;
+                LogUtil.Log("onTouch(), action cancel");
+
+                if(mLastDeleteBtnShowingPos != -1) {
+                    ListView lv = (ListView)v;
+                    int firstVisiblePos = lv.getFirstVisiblePosition()
+                            - lv.getHeaderViewsCount();
+                    int factPos = mLastDeleteBtnShowingPos - firstVisiblePos;
+                    mItemView = lv.getChildAt(factPos);
+                    if(mItemView != null) {
+                        if(mDeleteBtnID == -1)
+                            throw new IllegalDeleteButtonIDException("Illegal DeleteButton resource id,"
+                                    + "ensure excute the function setDeleteButtonID(int id)");
+
+                        mDeleteBtn = mItemView.findViewById(mDeleteBtnID);
+                        mDeleteBtn.startAnimation(mHideAnim);
+                    }
+
+                    mLastDeleteBtnShowingPos = -1;
+                }
             }break;
         }
 
@@ -183,8 +273,39 @@ public class SlidingDeleteListView extends ListView implements View.OnTouchListe
     }
 
     @Override
+    public boolean onInterceptTouchEvent(MotionEvent ev) {
+        if(mLastDeleteBtnShowingPos != -1 &&
+                ev.getAction() == MotionEvent.ACTION_DOWN && !isClickDeleteBtn(ev)) {
+            LogUtil.Log("onInterceptTouchEvent(), intercept action down event");
+
+            ev.setAction(MotionEvent.ACTION_CANCEL);
+            mCancelMotionEvent = true;
+
+            return true;
+        }
+
+        return super.onInterceptTouchEvent(ev);
+    };
+
+    @Override
     public void setOnTouchListener(OnTouchListener l) {
         mOnTouchListener = l;
+    }
+
+    private boolean isClickDeleteBtn(MotionEvent ev) {
+        mDeleteBtn.getLocationOnScreen(mShowingDeleteBtnLocation);
+
+        int left = mShowingDeleteBtnLocation[0];
+        int right = mShowingDeleteBtnLocation[0] + mDeleteBtn.getWidth();
+        int top = mShowingDeleteBtnLocation[1];
+        int bottom = mShowingDeleteBtnLocation[1] + mDeleteBtn.getHeight();
+
+        boolean result = (ev.getRawX() >= left
+                && ev.getRawX() <= right
+                && ev.getRawY() >= top
+                && ev.getRawY() <= bottom);
+
+        return result;
     }
 
     public static interface OnDeleteItemListener {

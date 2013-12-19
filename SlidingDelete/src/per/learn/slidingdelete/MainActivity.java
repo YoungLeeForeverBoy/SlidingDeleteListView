@@ -15,6 +15,7 @@ import android.view.Menu;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.BaseAdapter;
 import android.widget.Button;
 import android.widget.TextView;
@@ -57,8 +58,18 @@ public class MainActivity extends Activity {
 
             @Override
             public boolean onTouch(View v, MotionEvent event) {
-                LogUtil.Log("MainActivity.onTouch()");
                 return false;
+            }
+        });
+
+        mSlidingDeleteLv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+
+            @Override
+            public void onItemClick(AdapterView<?> view, View parent, int position,
+                    long id) {
+                LogUtil.Log("MainActivity.onItemClick()");
+                Toast.makeText(MainActivity.this, "click item " + position,
+                        Toast.LENGTH_SHORT).show();
             }
         });
     }
