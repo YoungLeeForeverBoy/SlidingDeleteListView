@@ -105,7 +105,7 @@ public class SlidingDeleteListView extends ListView implements View.OnTouchListe
     }
 
     @Override
-    public boolean onTouchEvent(final MotionEvent event) {
+    public boolean onTouchEvent(MotionEvent event) {
 
         if(mCancelMotionEvent && event.getAction() == MotionEvent.ACTION_MOVE) {
             return true;
