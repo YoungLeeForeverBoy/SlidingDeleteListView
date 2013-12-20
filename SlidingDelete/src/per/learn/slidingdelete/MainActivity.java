@@ -53,21 +53,12 @@ public class MainActivity extends Activity {
                 removeItem(position);
             }
         });
-
-        mSlidingDeleteLv.setOnTouchListener(new View.OnTouchListener() {
-
-            @Override
-            public boolean onTouch(View v, MotionEvent event) {
-                return false;
-            }
-        });
-
         mSlidingDeleteLv.setOnItemClickListener(new AdapterView.OnItemClickListener() {
 
             @Override
             public void onItemClick(AdapterView<?> view, View parent, int position,
                     long id) {
-                LogUtil.Log("MainActivity.onItemClick()");
+                //LogUtil.Log("MainActivity.onItemClick()");
                 Toast.makeText(MainActivity.this, "click item " + position,
                         Toast.LENGTH_SHORT).show();
             }
