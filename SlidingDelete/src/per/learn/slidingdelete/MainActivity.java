@@ -34,7 +34,7 @@ public class MainActivity extends Activity {
 
         mSlidingDeleteLv = (SlidingDeleteListView)findViewById(R.id.sliding_delete_lv);
         mAdapter = new MyAdapter(this, arrays);
-        mSlidingDeleteLv.setButtonID(R.id.delete_btn);
+        //mSlidingDeleteLv.setButtonID(R.id.delete_btn);
         mSlidingDeleteLv.setAdapter(mAdapter);
         mSlidingDeleteLv.setOnItemButtonShowingListener(new OnItemButtonShowingListener() {
 

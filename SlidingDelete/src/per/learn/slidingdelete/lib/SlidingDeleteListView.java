@@ -1,8 +1,8 @@
 package per.learn.slidingdelete.lib;
 
 import per.learn.slidingdelete.R;
-import per.learn.slidingdelete.util.LogUtil;
 import android.content.Context;
+import android.content.res.TypedArray;
 import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.VelocityTracker;
@@ -41,22 +41,29 @@ public class SlidingDeleteListView extends ListView {
 
     public SlidingDeleteListView(Context context) {
         super(context);
-        init();
+        init(null);
     }
 
     public SlidingDeleteListView(Context context, AttributeSet attrs) {
         super(context, attrs);
-        init();
+        init(attrs);
     }
 
     public SlidingDeleteListView(Context context, AttributeSet attrs,
             int defStyle) {
         super(context, attrs, defStyle);
-        init();
+        init(attrs);
     }
 
-    private void init() {
+    private void init(AttributeSet attrs) {
         setChoiceMode(ListView.CHOICE_MODE_SINGLE);
+
+        if(attrs != null) {
+            TypedArray styled = getContext().obtainStyledAttributes(attrs,
+                    R.styleable.SlidingDeleteListView);
+
+            mButtonID = styled.getResourceId(R.styleable.SlidingDeleteListView_buttonID, -1);
+        }
 
         mShowAnim = AnimationUtils.loadAnimation(getContext(), R.anim.anim_show_button);
         mShowAnim.setAnimationListener(new AnimationListener() {
