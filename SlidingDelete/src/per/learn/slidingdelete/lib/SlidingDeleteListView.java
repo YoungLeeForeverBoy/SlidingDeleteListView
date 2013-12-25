@@ -13,23 +13,27 @@ import android.view.animation.Animation.AnimationListener;
 import android.view.animation.AnimationUtils;
 import android.widget.ListView;
 
+/**
+ * A custom ListView that if user sliding left a item of this ListView,
+ * This item will show a Button.
+ * */
 public class SlidingDeleteListView extends ListView {
 
     public static final int MAX_DISTANCE = 100;
 
-    private int mDeleteBtnID = -1;
+    private int mButtonID = -1;
 
     private float mLastMotionX, mLastMotionY;
 
     private View mItemView;
-    private View mDeleteBtn;
+    private View mButton;
 
     private Animation mShowAnim, mHideAnim;
 
-    private int mLastDeleteBtnShowingPos = -1;
-    private int[] mShowingDeleteBtnLocation = new int[2];
+    private int mLastButtonShowingPos = -1;
+    private int[] mShowingButtonLocation = new int[2];
 
-    private OnDeleteItemListener mDeleteItemListener;
+    private OnItemButtonShowingListener mDeleteItemListener;
     private boolean mCancelMotionEvent = false;
 
     private VelocityTracker mTracker;
@@ -54,7 +58,7 @@ public class SlidingDeleteListView extends ListView {
     private void init() {
         setChoiceMode(ListView.CHOICE_MODE_SINGLE);
 
-        mShowAnim = AnimationUtils.loadAnimation(getContext(), R.anim.anim_show_delete_buttun);
+        mShowAnim = AnimationUtils.loadAnimation(getContext(), R.anim.anim_show_button);
         mShowAnim.setAnimationListener(new AnimationListener() {
 
             @Override
@@ -68,11 +72,11 @@ public class SlidingDeleteListView extends ListView {
             @Override
             public void onAnimationEnd(Animation animation) {
                 if(mDeleteItemListener != null)
-                    mDeleteItemListener.onShowDeleteBtn(mDeleteBtn);
+                    mDeleteItemListener.onShowButton(mButton);
 
             }
         });
-        mHideAnim = AnimationUtils.loadAnimation(getContext(), R.anim.anim_hide_delete_button);
+        mHideAnim = AnimationUtils.loadAnimation(getContext(), R.anim.anim_hide_button);
         mHideAnim.setAnimationListener(new AnimationListener() {
 
             @Override
@@ -85,20 +89,26 @@ public class SlidingDeleteListView extends ListView {
 
             @Override
             public void onAnimationEnd(Animation animation) {
-                mDeleteBtn.setVisibility(View.GONE);
-                mDeleteBtn.clearAnimation();
+                mButton.setVisibility(View.GONE);
+                mButton.clearAnimation();
 
                 if(mDeleteItemListener != null)
-                    mDeleteItemListener.onHideDeleteBtn(mDeleteBtn);
+                    mDeleteItemListener.onHideButton(mButton);
             }
         });
     }
 
-    public void setDeleteButtonID(int id) {
-        mDeleteBtnID = id;
+    /**
+     * Set the resource ID of the button your want to show after sliding
+     * */
+    public void setButtonID(int id) {
+        mButtonID = id;
     }
 
-    public void setOnDeleteItemListener(OnDeleteItemListener listener) {
+    /**
+     * Set the OnItemButtonShowingListener
+     * */
+    public void setOnItemButtonShowingListener(OnItemButtonShowingListener listener) {
         mDeleteItemListener = listener;
     }
 
@@ -118,15 +128,11 @@ public class SlidingDeleteListView extends ListView {
                 else
                     mTracker.clear();
 
-                //LogUtil.Log("onTouch(), action down");
-
                 mLastMotionX = event.getX();
                 mLastMotionY = event.getY();
             }break;
 
             case MotionEvent.ACTION_MOVE: {
-                //LogUtil.Log("onTouch(), action move");
-
                 mTracker.addMovement(event);
                 mTracker.computeCurrentVelocity(1000);
                 int curVelocityX = (int) mTracker.getXVelocity();
@@ -139,30 +145,28 @@ public class SlidingDeleteListView extends ListView {
                 int curPos = lv.pointToPosition((int)curX, (int)curY);
                 int distanceX = (int)(mLastMotionX - curX);
                 if(lastPos == curPos && (distanceX >= MAX_DISTANCE || curVelocityX < -MAX_FLING_VELOCITY)) {
-                    //LogUtil.Log("onTouch(), action move, curVelocityX = " + curVelocityX
-                    //        + ", max fling velocity = " + MAX_FLING_VELOCITY);
                     int firstVisiblePos = lv.getFirstVisiblePosition() - lv.getHeaderViewsCount();
                     int factPos = curPos - firstVisiblePos;
                     mItemView = lv.getChildAt(factPos);
                     if(mItemView != null) {
-                        if(mDeleteBtnID == -1)
-                            throw new IllegalDeleteButtonIDException("Illegal DeleteButton resource id,"
-                                    + "ensure excute the function setDeleteButtonID(int id)");
+                        if(mButtonID == -1)
+                            throw new IllegalButtonIDException("Illegal DeleteButton resource id,"
+                                    + "ensure excute the function setButtonID(int id)");
 
-                        mDeleteBtn = mItemView.findViewById(mDeleteBtnID);
-                        mDeleteBtn.setVisibility(View.VISIBLE);
-                        mDeleteBtn.startAnimation(mShowAnim);
+                        mButton = mItemView.findViewById(mButtonID);
+                        mButton.setVisibility(View.VISIBLE);
+                        mButton.startAnimation(mShowAnim);
 
-                        mLastDeleteBtnShowingPos = curPos;
-                        mDeleteBtn.setOnClickListener(new View.OnClickListener() {
+                        mLastButtonShowingPos = curPos;
+                        mButton.setOnClickListener(new View.OnClickListener() {
 
                             @Override
                             public void onClick(View v) {
                                 if(mDeleteItemListener != null)
-                                    mDeleteItemListener.onDeleteBtnClick(v, mLastDeleteBtnShowingPos);
-                                mDeleteBtn.setVisibility(View.GONE);
+                                    mDeleteItemListener.onButtonClick(v, mLastButtonShowingPos);
+                                mButton.setVisibility(View.GONE);
 
-                                mLastDeleteBtnShowingPos = -1;
+                                mLastButtonShowingPos = -1;
                             }
                         });
 
@@ -174,7 +178,6 @@ public class SlidingDeleteListView extends ListView {
             }break;
 
             case MotionEvent.ACTION_UP: {
-                //LogUtil.Log("onTouch(), action up");
                 if(mTracker != null) {
                     mTracker.clear();
                     mTracker.recycle();
@@ -183,30 +186,28 @@ public class SlidingDeleteListView extends ListView {
 
                 mCancelMotionEvent = false;
 
-                if(mLastDeleteBtnShowingPos != -1) {
+                if(mLastButtonShowingPos != -1) {
                     event.setAction(MotionEvent.ACTION_CANCEL);
                 }
             }break;
 
             case MotionEvent.ACTION_CANCEL: {
-                //LogUtil.Log("onTouch(), action cancel");
-
-                if(mLastDeleteBtnShowingPos != -1) {
+                if(mLastButtonShowingPos != -1) {
                     ListView lv = (ListView)this;
                     int firstVisiblePos = lv.getFirstVisiblePosition()
                             - lv.getHeaderViewsCount();
-                    int factPos = mLastDeleteBtnShowingPos - firstVisiblePos;
+                    int factPos = mLastButtonShowingPos - firstVisiblePos;
                     mItemView = lv.getChildAt(factPos);
                     if(mItemView != null) {
-                        if(mDeleteBtnID == -1)
-                            throw new IllegalDeleteButtonIDException("Illegal DeleteButton resource id,"
-                                    + "ensure excute the function setDeleteButtonID(int id)");
+                        if(mButtonID == -1)
+                            throw new IllegalButtonIDException("Illegal DeleteButton resource id,"
+                                    + "ensure excute the function setButtonID(int id)");
 
-                        mDeleteBtn = mItemView.findViewById(mDeleteBtnID);
-                        mDeleteBtn.startAnimation(mHideAnim);
+                        mButton = mItemView.findViewById(mButtonID);
+                        mButton.startAnimation(mHideAnim);
                     }
 
-                    mLastDeleteBtnShowingPos = -1;
+                    mLastButtonShowingPos = -1;
                 }
             }break;
         }
@@ -216,10 +217,8 @@ public class SlidingDeleteListView extends ListView {
 
     @Override
     public boolean onInterceptTouchEvent(MotionEvent ev) {
-        if(mLastDeleteBtnShowingPos != -1 &&
+        if(mLastButtonShowingPos != -1 &&
                 ev.getAction() == MotionEvent.ACTION_DOWN && !isClickButton(ev)) {
-            //LogUtil.Log("onInterceptTouchEvent(), intercept action down event");
-
             ev.setAction(MotionEvent.ACTION_CANCEL);
             mCancelMotionEvent = true;
 
@@ -229,13 +228,20 @@ public class SlidingDeleteListView extends ListView {
         return super.onInterceptTouchEvent(ev);
     };
 
+    /*
+     * because we must intercept the touch event when a item had showing
+     * a button, so we must ensure if user just click the showing button,
+     * if it's true, we not need intercept the touch event(in fact the event
+     * MotionEvent.ACTION_DOWN, this touch event is very important), if false
+     * we need intercept the motion event and then hide the showing button
+     * */
     private boolean isClickButton(MotionEvent ev) {
-        mDeleteBtn.getLocationOnScreen(mShowingDeleteBtnLocation);
+        mButton.getLocationOnScreen(mShowingButtonLocation);
 
-        int left = mShowingDeleteBtnLocation[0];
-        int right = mShowingDeleteBtnLocation[0] + mDeleteBtn.getWidth();
-        int top = mShowingDeleteBtnLocation[1];
-        int bottom = mShowingDeleteBtnLocation[1] + mDeleteBtn.getHeight();
+        int left = mShowingButtonLocation[0];
+        int right = mShowingButtonLocation[0] + mButton.getWidth();
+        int top = mShowingButtonLocation[1];
+        int bottom = mShowingButtonLocation[1] + mButton.getHeight();
 
         return (ev.getRawX() >= left
                 && ev.getRawX() <= right
@@ -243,18 +249,38 @@ public class SlidingDeleteListView extends ListView {
                 && ev.getRawY() <= bottom);
     }
 
-    public static interface OnDeleteItemListener {
-        void onShowDeleteBtn(View button);
-        void onHideDeleteBtn(View button);
-        void onDeleteBtnClick(View button, int position);
+    /**
+     * A listener, when a item of this ListView showing a Button,
+     * it will callback this listener.
+     * */
+    public static interface OnItemButtonShowingListener {
+        /**
+         * after the button had played showing animation
+         * 
+         * @param button the button which just been showing
+         * */
+        void onShowButton(View button);
+        /**
+         * after the button had played disappear animation
+         * 
+         * @param button the button which just been disappeared
+         * */
+        void onHideButton(View button);
+        /**
+         * the button had been clicked
+         * 
+         * @param button the button which just been clicked
+         * @param position the position of the item in the ListView which show this button
+         * */
+        void onButtonClick(View button, int position);
     }
 
     @SuppressWarnings("serial")
-    public static class IllegalDeleteButtonIDException extends RuntimeException {
+    public static class IllegalButtonIDException extends RuntimeException {
 
-        public IllegalDeleteButtonIDException() {}
+        public IllegalButtonIDException() {}
 
-        public IllegalDeleteButtonIDException(String msg) {
+        public IllegalButtonIDException(String msg) {
             super(msg);
         }
     }

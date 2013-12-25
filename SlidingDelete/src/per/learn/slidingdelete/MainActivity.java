@@ -4,15 +4,13 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 import per.learn.slidingdelete.lib.SlidingDeleteListView;
-import per.learn.slidingdelete.lib.SlidingDeleteListView.OnDeleteItemListener;
-import per.learn.slidingdelete.util.LogUtil;
+import per.learn.slidingdelete.lib.SlidingDeleteListView.OnItemButtonShowingListener;
 import per.learn.slidingdelete.util.Util;
 import android.app.Activity;
 import android.content.Context;
 import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.Menu;
-import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
@@ -36,20 +34,20 @@ public class MainActivity extends Activity {
 
         mSlidingDeleteLv = (SlidingDeleteListView)findViewById(R.id.sliding_delete_lv);
         mAdapter = new MyAdapter(this, arrays);
-        mSlidingDeleteLv.setDeleteButtonID(R.id.delete_btn);
+        mSlidingDeleteLv.setButtonID(R.id.delete_btn);
         mSlidingDeleteLv.setAdapter(mAdapter);
-        mSlidingDeleteLv.setOnDeleteItemListener(new OnDeleteItemListener() {
+        mSlidingDeleteLv.setOnItemButtonShowingListener(new OnItemButtonShowingListener() {
 
             @Override
-            public void onShowDeleteBtn(View button) {
+            public void onShowButton(View button) {
             }
 
             @Override
-            public void onHideDeleteBtn(View button) {
+            public void onHideButton(View button) {
             }
 
             @Override
-            public void onDeleteBtnClick(View button, int position) {
+            public void onButtonClick(View button, int position) {
                 removeItem(position);
             }
         });
@@ -58,9 +56,18 @@ public class MainActivity extends Activity {
             @Override
             public void onItemClick(AdapterView<?> view, View parent, int position,
                     long id) {
-                //LogUtil.Log("MainActivity.onItemClick()");
                 Toast.makeText(MainActivity.this, "click item " + position,
                         Toast.LENGTH_SHORT).show();
+            }
+        });
+        mSlidingDeleteLv.setOnItemLongClickListener(new AdapterView.OnItemLongClickListener() {
+
+            @Override
+            public boolean onItemLongClick(AdapterView<?> parent, View view,
+                    int position, long id) {
+                Toast.makeText(MainActivity.this, "long click",
+                        Toast.LENGTH_SHORT).show();
+                return true;
             }
         });
     }
