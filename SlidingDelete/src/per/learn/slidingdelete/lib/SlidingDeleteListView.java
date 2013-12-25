@@ -35,6 +35,7 @@ public class SlidingDeleteListView extends ListView {
 
     private OnItemButtonShowingListener mDeleteItemListener;
     private boolean mCancelMotionEvent = false;
+    private boolean mEnableSliding = true;
 
     private VelocityTracker mTracker;
     private static final int MAX_FLING_VELOCITY = ViewConfiguration.getMinimumFlingVelocity() * 10;
@@ -144,17 +145,16 @@ public class SlidingDeleteListView extends ListView {
                 mTracker.computeCurrentVelocity(1000);
                 int curVelocityX = (int) mTracker.getXVelocity();
 
-                ListView lv = (ListView)this;
                 float curX = event.getX();
                 float curY = event.getY();
-                int lastPos = ((ListView)this).pointToPosition(
+                int lastPos = pointToPosition(
                         (int)mLastMotionX, (int)mLastMotionY);
-                int curPos = lv.pointToPosition((int)curX, (int)curY);
+                int curPos = pointToPosition((int)curX, (int)curY);
                 int distanceX = (int)(mLastMotionX - curX);
                 if(lastPos == curPos && (distanceX >= MAX_DISTANCE || curVelocityX < -MAX_FLING_VELOCITY)) {
-                    int firstVisiblePos = lv.getFirstVisiblePosition() - lv.getHeaderViewsCount();
+                    int firstVisiblePos = getFirstVisiblePosition() - getHeaderViewsCount();
                     int factPos = curPos - firstVisiblePos;
-                    mItemView = lv.getChildAt(factPos);
+                    mItemView = getChildAt(factPos);
                     if(mItemView != null) {
                         if(mButtonID == -1)
                             throw new IllegalButtonIDException("Illegal DeleteButton resource id,"
@@ -180,8 +180,6 @@ public class SlidingDeleteListView extends ListView {
                         mCancelMotionEvent = true;
                     }
                 }
-
-                lv = null;
             }break;
 
             case MotionEvent.ACTION_UP: {
@@ -200,11 +198,10 @@ public class SlidingDeleteListView extends ListView {
 
             case MotionEvent.ACTION_CANCEL: {
                 if(mLastButtonShowingPos != -1) {
-                    ListView lv = (ListView)this;
-                    int firstVisiblePos = lv.getFirstVisiblePosition()
-                            - lv.getHeaderViewsCount();
+                    int firstVisiblePos = getFirstVisiblePosition()
+                            - getHeaderViewsCount();
                     int factPos = mLastButtonShowingPos - firstVisiblePos;
-                    mItemView = lv.getChildAt(factPos);
+                    mItemView = getChildAt(factPos);
                     if(mItemView != null) {
                         if(mButtonID == -1)
                             throw new IllegalButtonIDException("Illegal DeleteButton resource id,"
