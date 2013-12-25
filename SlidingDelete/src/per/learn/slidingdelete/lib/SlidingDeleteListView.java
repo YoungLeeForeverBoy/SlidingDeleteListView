@@ -64,6 +64,8 @@ public class SlidingDeleteListView extends ListView {
                     R.styleable.SlidingDeleteListView);
 
             mButtonID = styled.getResourceId(R.styleable.SlidingDeleteListView_buttonID, -1);
+            mEnableSliding = styled.getBoolean(
+                    R.styleable.SlidingDeleteListView_enableSliding, true);
         }
 
         mShowAnim = AnimationUtils.loadAnimation(getContext(), R.anim.anim_show_button);
@@ -122,6 +124,8 @@ public class SlidingDeleteListView extends ListView {
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
+        if(!mEnableSliding)
+            return false;
 
         if(mCancelMotionEvent && event.getAction() == MotionEvent.ACTION_MOVE) {
             return true;
@@ -221,7 +225,7 @@ public class SlidingDeleteListView extends ListView {
 
     @Override
     public boolean onInterceptTouchEvent(MotionEvent ev) {
-        if(mLastButtonShowingPos != -1 &&
+        if(mEnableSliding && mLastButtonShowingPos != -1 &&
                 ev.getAction() == MotionEvent.ACTION_DOWN && !isClickButton(ev)) {
             ev.setAction(MotionEvent.ACTION_CANCEL);
             mCancelMotionEvent = true;
@@ -231,6 +235,15 @@ public class SlidingDeleteListView extends ListView {
 
         return super.onInterceptTouchEvent(ev);
     };
+
+    /**
+     * set if need enable the sliding
+     * 
+     * @param enable true if need enable sliding, false not
+     * */
+    public void setEnableSliding(boolean enable) {
+        mEnableSliding = enable;
+    }
 
     /*
      * because we must intercept the touch event when a item had showing

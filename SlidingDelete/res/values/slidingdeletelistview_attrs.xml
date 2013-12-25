@@ -2,5 +2,6 @@
 <resources>
     <declare-styleable name="SlidingDeleteListView">
         <attr name="buttonID" format="reference"/>
+        <attr name="enableSliding" format="boolean"/>
     </declare-styleable>
 </resources>
