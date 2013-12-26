@@ -100,7 +100,6 @@ public class SlidingDeleteListView extends ListView {
             @Override
             public void onAnimationEnd(Animation animation) {
                 mButton.setVisibility(View.GONE);
-                mButton.clearAnimation();
 
                 if(mDeleteItemListener != null)
                     mDeleteItemListener.onHideButton(mButton);
