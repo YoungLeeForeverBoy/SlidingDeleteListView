@@ -201,22 +201,7 @@ public class SlidingDeleteListView extends ListView {
             }break;
 
             case MotionEvent.ACTION_CANCEL: {
-                if(mLastButtonShowingPos != -1) {
-                    int firstVisiblePos = getFirstVisiblePosition()
-                            - getHeaderViewsCount();
-                    int factPos = mLastButtonShowingPos - firstVisiblePos;
-                    mItemView = getChildAt(factPos);
-                    if(mItemView != null) {
-                        if(mButtonID == -1)
-                            throw new IllegalButtonIDException("Illegal DeleteButton resource id,"
-                                    + "ensure excute the function setButtonID(int id)");
-
-                        mButton = mItemView.findViewById(mButtonID);
-                        mButton.startAnimation(mHideAnim);
-                    }
-
-                    mLastButtonShowingPos = -1;
-                }
+                hideShowingButtonWithAnim();
             }break;
         }
 
@@ -243,6 +228,52 @@ public class SlidingDeleteListView extends ListView {
      * */
     public void setEnableSliding(boolean enable) {
         mEnableSliding = enable;
+    }
+
+    /**
+     * hide the showing button without hide animation
+     * */
+    public void hideShowingButtonWithoutAnim() {
+        if(mLastButtonShowingPos != -1) {
+            int firstVisiblePos = getFirstVisiblePosition()
+                    - getHeaderViewsCount();
+            int factPos = mLastButtonShowingPos - firstVisiblePos;
+            mItemView = getChildAt(factPos);
+            if(mItemView != null) {
+                if(mButtonID == -1)
+                    throw new IllegalButtonIDException("Illegal DeleteButton resource id,"
+                            + "ensure excute the function setButtonID(int id)");
+
+                mButton = mItemView.findViewById(mButtonID);
+                mButton.setVisibility(View.INVISIBLE);
+                if(mDeleteItemListener != null)
+                    mDeleteItemListener.onHideButton(mButton);
+            }
+
+            mLastButtonShowingPos = -1;
+        }
+    }
+
+    /**
+     * hide the showing button with hide animation
+     * */
+    public void hideShowingButtonWithAnim() {
+        if(mLastButtonShowingPos != -1) {
+            int firstVisiblePos = getFirstVisiblePosition()
+                    - getHeaderViewsCount();
+            int factPos = mLastButtonShowingPos - firstVisiblePos;
+            mItemView = getChildAt(factPos);
+            if(mItemView != null) {
+                if(mButtonID == -1)
+                    throw new IllegalButtonIDException("Illegal DeleteButton resource id,"
+                            + "ensure excute the function setButtonID(int id)");
+
+                mButton = mItemView.findViewById(mButtonID);
+                mButton.startAnimation(mHideAnim);
+            }
+
+            mLastButtonShowingPos = -1;
+        }
     }
 
     /*
